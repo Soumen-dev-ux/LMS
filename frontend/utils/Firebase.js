@@ -1,12 +1,12 @@
 import {getAuth, GoogleAuthProvider} from "firebase/auth"
 import { initializeApp } from "firebase/app";
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_APIKEY ,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECTID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGEBUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGINGSENDERID,
-  appId: import.meta.env.VITE_FIREBASE_APPID
+  apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
+  authDomain: "edurova-e0867.firebaseapp.com",
+  projectId: "edurova-e0867",
+  storageBucket: "edurova-e0867.firebasestorage.app",
+  messagingSenderId: "539689006987",
+  appId: "1:539689006987:web:ba7707bee60ee3200e618e",
 };
 
 // Initialize Firebase
