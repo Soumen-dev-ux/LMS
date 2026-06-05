@@ -15,8 +15,11 @@ let port = process.env.PORT
 let app = express()
 app.use(express.json())
 app.use(cookieParser())
+const allowedOrigins = process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(",") 
+    : ["http://localhost:5173", "https://edurova.vercel.app", "https://edurova.vercel.app/"];
 app.use(cors({
-    origin:"http://localhost:5173",
+    origin: allowedOrigins,
     credentials:true
 }))
 app.use("/api/auth", authRouter)

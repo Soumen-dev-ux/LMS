@@ -26,7 +26,8 @@ import ViewLecture from './pages/ViewLecture'
 import SearchWithAi from './pages/SearchWithAi'
 import getAllReviews from './customHooks/getAllReviews'
 
-export const serverUrl = "http://localhost:8000"
+const rawUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://lms-vg8c.onrender.com" : "http://localhost:8000");
+export const serverUrl = rawUrl.endsWith("/") ? rawUrl.slice(0, -1) : rawUrl;
 
 function App() {
   
