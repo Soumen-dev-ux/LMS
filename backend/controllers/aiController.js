@@ -72,5 +72,33 @@ Query: ${input}
 
     } catch (error) {
         console.log(error)
+        return res.status(500).json({message: `Failed to search with AI ${error.message}`})
     }
 }
+
+export const askAi = async (req, res) => {
+  try {
+    const { question, courseTitle, lectureTitle } = req.body;
+    if (!question) {
+      return res.status(400).json({ message: "Question is required" });
+    }
+
+    const ai = new GoogleGenAI({});
+    const prompt = `You are a helpful and intelligent AI tutor for an online course platform called EduRova.
+The student is currently taking the course: "${courseTitle || "General Studies"}" and watching the lecture: "${lectureTitle || "General Lecture"}".
+They have asked you the following question:
+"${question}"
+
+Please provide a clear, educational, and concise response to help them understand the topic. Keep the answer structure easy to read.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    return res.status(200).json({ answer: response.text });
+  } catch (error) {
+    console.error("AI Ask error:", error);
+    return res.status(500).json({ message: `Failed to generate response: ${error.message}` });
+  }
+};

@@ -7,6 +7,7 @@ import { serverUrl } from '../App';
 import { useNavigate } from 'react-router-dom';
 import start from "../assets/start.mp3"
 import { FaArrowLeftLong } from "react-icons/fa6";
+import { toast } from 'react-toastify';
 function SearchWithAi() {
   const [input, setInput] = useState('');
   const [recommendations, setRecommendations] = useState([]);
@@ -19,7 +20,7 @@ function SearchWithAi() {
   }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
+  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
   if (!recognition) {
     console.log("Speech recognition not supported");
@@ -27,7 +28,10 @@ function SearchWithAi() {
 
   const handleSearch = async () => {
 
-    if (!recognition) return;
+    if (!recognition) {
+      toast.error("Speech recognition is not supported in this browser. Please type your query.");
+      return;
+    }
     setListening(true)
     startSound.play()
     recognition.start();
@@ -76,6 +80,11 @@ function SearchWithAi() {
             placeholder="What do you want to learn? (e.g. AI, MERN, Cloud...)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleRecommendation(input);
+              }
+            }}
           />
           
           
