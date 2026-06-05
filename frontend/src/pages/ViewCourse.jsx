@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { serverUrl } from '../App';
 import { FaArrowLeftLong } from "react-icons/fa6";
 import img from "../assets/empty.jpg"
@@ -16,6 +16,7 @@ function ViewCourse() {
 
   const { courseId } = useParams();
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams();
   const { courseData } = useSelector(state => state.course)
   const { userData } = useSelector(state => state.user)
   const [creatorData, setCreatorData] = useState(null)
@@ -27,6 +28,35 @@ function ViewCourse() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+
+  useEffect(() => {
+    const checkPaymentSuccess = async () => {
+      const paymentSuccess = searchParams.get('payment_success');
+      const sessionId = searchParams.get('session_id');
+
+      if (paymentSuccess === 'true' && sessionId) {
+        toast.info("Verifying payment, please wait...");
+        try {
+          const verifyRes = await axios.post(serverUrl + "/api/payment/verify-payment", {
+            session_id: sessionId,
+            courseId,
+            userId: userData?._id
+          }, { withCredentials: true });
+
+          setIsEnrolled(true);
+          toast.success(verifyRes.data.message);
+          setSearchParams({});
+        } catch (verifyError) {
+          toast.error("Payment verification failed.");
+          console.error("Verification Error:", verifyError);
+        }
+      }
+    };
+
+    if (userData?._id) {
+      checkPaymentSuccess();
+    }
+  }, [searchParams, userData, courseId]);
 
 
 
@@ -131,59 +161,20 @@ function ViewCourse() {
 
   const handleEnroll = async (courseId, userId) => {
     try {
-      // 1. Create Order
+      // 1. Create Stripe Checkout Session
       const orderData = await axios.post(serverUrl + "/api/payment/create-order", {
         courseId,
         userId
       }, { withCredentials: true });
       console.log(orderData)
 
-      const orderId = orderData.data.id;
+      const checkoutUrl = orderData.data.url;
 
-      if (orderId && orderId.startsWith("order_mock_")) {
-        try {
-          const verifyRes = await axios.post(serverUrl + "/api/payment/verify-payment", {
-            razorpay_order_id: orderId,
-            courseId,
-            userId
-          }, { withCredentials: true });
-
-          setIsEnrolled(true)
-          toast.success("Enrolled Successfully (Mock Mode)");
-        } catch (verifyError) {
-          toast.error("Mock enrollment failed.");
-          console.error("Verification Error:", verifyError);
-        }
-        return;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        toast.error("Failed to initiate checkout session.");
       }
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // from .env
-        amount: orderData.data.amount,
-        currency: "INR",
-        name: "EduRova",
-        description: "Course Enrollment Payment",
-        order_id: orderId,
-        handler: async function (response) {
-          console.log("Razorpay Response:", response);
-          try {
-            const verifyRes = await axios.post(serverUrl + "/api/payment/verify-payment", {
-              ...response,
-              courseId,
-              userId
-            }, { withCredentials: true });
-
-            setIsEnrolled(true)
-            toast.success(verifyRes.data.message);
-          } catch (verifyError) {
-            toast.error("Payment verification failed.");
-            console.error("Verification Error:", verifyError);
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay(options)
-      rzp.open()
 
     } catch (err) {
       toast.error("Something went wrong while enrolling.");

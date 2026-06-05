@@ -1,43 +1,48 @@
 import Course from "../models/courseModel.js";
-import razorpay from 'razorpay'
+import Stripe from 'stripe';
 import User from "../models/userModel.js";
 import dotenv from "dotenv"
 dotenv.config()
-const razorpayInstance = new razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_SECRET,
-})
+
+const stripeSecret = process.env.STRIPE_SECRET_KEY || process.env.RAZORPAY_SECRET;
+const stripe = new Stripe(stripeSecret);
 
 export const createOrder = async (req, res) => {
   try {
-    const { courseId } = req.body;
+    const { courseId, userId } = req.body;
 
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    if (keyId && keyId.startsWith("pk_test")) {
-      return res.status(200).json({
-        id: "order_mock_" + Math.random().toString(36).substring(2, 15),
-        amount: course.price * 100,
-        currency: "INR",
-        receipt: courseId.toString(),
-        status: "created"
-      });
-    }
+    // Create a Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'inr',
+            product_data: {
+              name: course.title,
+              description: course.subTitle || course.description || 'Course Enrollment',
+            },
+            unit_amount: course.price * 100, // Amount in paise/cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `http://localhost:5173/viewcourse/${courseId}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5173/viewcourse/${courseId}?payment_cancel=true`,
+      metadata: {
+        courseId: courseId.toString(),
+        userId: userId.toString(),
+      },
+    });
 
-    const options = {
-      amount: course.price * 100, // in paisa
-      currency: 'INR',
-      receipt: `${courseId}.toString()`,
-    };
-
-    const order = await razorpayInstance.orders.create(options);
-    return res.status(200).json(order);
+    return res.status(200).json({ url: session.url, id: session.id });
   } catch (err) {
-    console.log(err)
-    return res.status(500).json({ message: `Order creation failed ${err}` });
-
+    console.log(err);
+    return res.status(500).json({ message: `Order creation failed ${err.message}` });
   }
 };
 
@@ -45,40 +50,35 @@ export const createOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    
-    const {razorpay_order_id , courseId , userId} = req.body
-    let isPaid = false;
-    
-    if (razorpay_order_id && razorpay_order_id.startsWith("order_mock_")) {
-      isPaid = true;
-    } else {
-      const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
-      if (orderInfo.status === 'paid') {
-        isPaid = true;
-      }
-    }
+    const { session_id, courseId, userId } = req.body;
 
-    if(isPaid) {
+    // Retrieve session
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === 'paid') {
+      const cId = courseId || session.metadata.courseId;
+      const uId = userId || session.metadata.userId;
+
       // Update user and course enrollment
-      const user = await User.findById(userId);
+      const user = await User.findById(uId);
       if (user) {
-        if (!user.enrolledCourses.includes(courseId)) {
-          user.enrolledCourses.push(courseId);
+        if (!user.enrolledCourses.includes(cId)) {
+          user.enrolledCourses.push(cId);
           await user.save();
         }
       }
 
-      const course = await Course.findById(courseId).populate("lectures");
+      const course = await Course.findById(cId).populate("lectures");
       if (course) {
-        if (!course.enrolledStudents.includes(userId)) {
-          course.enrolledStudents.push(userId);
+        if (!course.enrolledStudents.includes(uId)) {
+          course.enrolledStudents.push(uId);
           await course.save();
         }
       }
 
       return res.status(200).json({ message: "Payment verified and enrollment successful" });
     } else {
-      return res.status(400).json({ message: "Payment verification failed (invalid signature)" });
+      return res.status(400).json({ message: "Payment verification failed" });
     }
   } catch (error) {
     console.log(error);
