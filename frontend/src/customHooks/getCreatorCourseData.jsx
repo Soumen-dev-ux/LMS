@@ -21,11 +21,13 @@ const getCreatorCourseData = () => {
         
       } catch (error) {
         console.log(error)
-        toast.error(error.response.data.message)
+        toast.error(error.response?.data?.message || error.message || "Failed to get creator data")
       }
       
     }
-    getCreatorData()
+    if (userData && userData.role === "educator") {
+        getCreatorData()
+    }
   },[userData])
   )
 }

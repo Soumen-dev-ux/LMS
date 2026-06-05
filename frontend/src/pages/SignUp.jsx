@@ -36,7 +36,7 @@ function SignUp() {
         catch (error) {
             console.log(error)
             setLoading(false)
-            toast.error(error.response.data.message)
+            toast.error(error.response?.data?.message || error.message || "Sign up failed")
         }
 
     }
@@ -57,7 +57,7 @@ function SignUp() {
             toast.success("SignUp Successfully")
         } catch (error) {
             console.log(error)
-            toast.error(error.response.data.message)
+            toast.error(error.response?.data?.message || error.message || "Google signup failed")
         }
 
     }

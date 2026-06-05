@@ -138,13 +138,32 @@ function ViewCourse() {
       }, { withCredentials: true });
       console.log(orderData)
 
+      const orderId = orderData.data.id;
+
+      if (orderId && orderId.startsWith("order_mock_")) {
+        try {
+          const verifyRes = await axios.post(serverUrl + "/api/payment/verify-payment", {
+            razorpay_order_id: orderId,
+            courseId,
+            userId
+          }, { withCredentials: true });
+
+          setIsEnrolled(true)
+          toast.success("Enrolled Successfully (Mock Mode)");
+        } catch (verifyError) {
+          toast.error("Mock enrollment failed.");
+          console.error("Verification Error:", verifyError);
+        }
+        return;
+      }
+
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID, // from .env
         amount: orderData.data.amount,
         currency: "INR",
         name: "EduRova",
         description: "Course Enrollment Payment",
-        order_id: orderData.data.id,
+        order_id: orderId,
         handler: async function (response) {
           console.log("Razorpay Response:", response);
           try {
