@@ -14,6 +14,11 @@ export const createOrder = async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
+    // Determine client's frontend URL dynamically
+    const clientOrigin = req.headers.origin || 
+                         (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',')[0] : "http://localhost:5173");
+    const baseUrl = clientOrigin.replace(/\/+$/, "");
+
     // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -31,8 +36,8 @@ export const createOrder = async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: `http://localhost:5173/viewcourse/${courseId}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5173/viewcourse/${courseId}?payment_cancel=true`,
+      success_url: `${baseUrl}/viewcourse/${courseId}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/viewcourse/${courseId}?payment_cancel=true`,
       metadata: {
         courseId: courseId.toString(),
         userId: userId.toString(),

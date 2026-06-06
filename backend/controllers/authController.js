@@ -32,11 +32,14 @@ export const signUp=async (req,res)=>{
            
             })
         let token = await genToken(user._id)
-        const isProduction = process.env.NODE_ENV === "production";
+        const isProductionOrHttps = process.env.NODE_ENV === "production" || 
+                                    req.secure || 
+                                    (req.headers['x-forwarded-proto'] === 'https') || 
+                                    (req.headers.origin && req.headers.origin.startsWith('https://'));
         res.cookie("token",token,{
             httpOnly:true,
-            secure: isProduction,
-            sameSite: isProduction ? "none" : "Strict",
+            secure: isProductionOrHttps,
+            sameSite: isProductionOrHttps ? "none" : "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         return res.status(201).json(user)
@@ -59,11 +62,14 @@ export const login=async(req,res)=>{
             return res.status(400).json({message:"incorrect Password"})
         }
         let token =await genToken(user._id)
-        const isProduction = process.env.NODE_ENV === "production";
+        const isProductionOrHttps = process.env.NODE_ENV === "production" || 
+                                    req.secure || 
+                                    (req.headers['x-forwarded-proto'] === 'https') || 
+                                    (req.headers.origin && req.headers.origin.startsWith('https://'));
         res.cookie("token",token,{
             httpOnly:true,
-            secure: isProduction,
-            sameSite: isProduction ? "none" : "Strict",
+            secure: isProductionOrHttps,
+            sameSite: isProductionOrHttps ? "none" : "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         return res.status(200).json(user)
@@ -79,11 +85,14 @@ export const login=async(req,res)=>{
 
 export const logOut = async(req,res)=>{
     try {
-        const isProduction = process.env.NODE_ENV === "production";
+        const isProductionOrHttps = process.env.NODE_ENV === "production" || 
+                                    req.secure || 
+                                    (req.headers['x-forwarded-proto'] === 'https') || 
+                                    (req.headers.origin && req.headers.origin.startsWith('https://'));
         res.clearCookie("token", {
             httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? "none" : "Strict"
+            secure: isProductionOrHttps,
+            sameSite: isProductionOrHttps ? "none" : "Strict"
         })
         return res.status(200).json({message:"logOut Successfully"})
     } catch (error) {
@@ -102,11 +111,14 @@ export const googleSignup = async (req,res) => {
         })
         }
         let token =await genToken(user._id)
-        const isProduction = process.env.NODE_ENV === "production";
+        const isProductionOrHttps = process.env.NODE_ENV === "production" || 
+                                    req.secure || 
+                                    (req.headers['x-forwarded-proto'] === 'https') || 
+                                    (req.headers.origin && req.headers.origin.startsWith('https://'));
         res.cookie("token",token,{
             httpOnly:true,
-            secure: isProduction,
-            sameSite: isProduction ? "none" : "Strict",
+            secure: isProductionOrHttps,
+            sameSite: isProductionOrHttps ? "none" : "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
         return res.status(200).json(user)

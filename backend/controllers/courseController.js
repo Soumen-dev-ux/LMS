@@ -119,12 +119,12 @@ export const createLecture = async (req,res) => {
         if(!lectureTitle || !courseId){
              return res.status(400).json({message:"Lecture Title required"})
         }
-        const lecture = await Lecture.create({lectureTitle})
         const course = await Course.findById(courseId)
-        if(course){
-            course.lectures.push(lecture._id)
-            
+        if(!course){
+            return res.status(404).json({message:"Course not found"})
         }
+        const lecture = await Lecture.create({lectureTitle})
+        course.lectures.push(lecture._id)
         await course.populate("lectures")
         await course.save()
         return res.status(201).json({lecture,course})
@@ -143,7 +143,6 @@ export const getCourseLecture = async (req,res) => {
             return res.status(404).json({message:"Course not found"})
         }
         await course.populate("lectures")
-        await course.save()
         return res.status(200).json(course)
     } catch (error) {
         return res.status(500).json({message:`Failed to get Lectures ${error}`})
