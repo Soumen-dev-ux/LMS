@@ -19,8 +19,18 @@ const allowedOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(",") 
     : ["http://localhost:5173", "https://edurova.vercel.app", "https://edurova.vercel.app/"];
 app.use(cors({
-    origin: allowedOrigins,
-    credentials:true
+    origin: (origin, callback) => {
+        console.log("CORS Request from Origin:", origin);
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes(origin + "/")) {
+            return callback(null, true);
+        }
+        if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
 }))
 app.use("/api/auth", authRouter)
 app.use("/api/user", userRouter)
