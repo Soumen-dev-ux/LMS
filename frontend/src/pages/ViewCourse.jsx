@@ -7,6 +7,7 @@ import { FaArrowLeftLong } from "react-icons/fa6";
 import img from "../assets/empty.jpg"
 import Card from "../components/Card.jsx"
 import { setSelectedCourseData } from '../redux/courseSlice';
+import { setUserData } from '../redux/userSlice';
 import { FaLock, FaPlayCircle } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import { FaStar } from "react-icons/fa6";
@@ -45,6 +46,12 @@ function ViewCourse() {
 
           setIsEnrolled(true);
           toast.success(verifyRes.data.message);
+          try {
+            const userRes = await axios.get(serverUrl + "/api/user/currentuser", { withCredentials: true });
+            dispatch(setUserData(userRes.data));
+          } catch (fetchErr) {
+            console.error("Error fetching updated user:", fetchErr);
+          }
           setSearchParams({});
         } catch (verifyError) {
           toast.error("Payment verification failed.");
@@ -167,6 +174,18 @@ function ViewCourse() {
         userId
       }, { withCredentials: true });
       console.log(orderData)
+
+      if (orderData.data.free) {
+        toast.success(orderData.data.message || "Enrolled successfully!");
+        setIsEnrolled(true);
+        try {
+          const userRes = await axios.get(serverUrl + "/api/user/currentuser", { withCredentials: true });
+          dispatch(setUserData(userRes.data));
+        } catch (fetchErr) {
+          console.error("Error fetching updated user:", fetchErr);
+        }
+        return;
+      }
 
       const checkoutUrl = orderData.data.url;
 

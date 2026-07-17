@@ -14,6 +14,24 @@ export const createOrder = async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
+    // Handle free course enrollment directly
+    if (!course.price || course.price <= 0) {
+      const user = await User.findById(userId);
+      if (user) {
+        if (!user.enrolledCourses.includes(courseId)) {
+          user.enrolledCourses.push(courseId);
+          await user.save();
+        }
+      }
+
+      if (!course.enrolledStudents.includes(userId)) {
+        course.enrolledStudents.push(userId);
+        await course.save();
+      }
+
+      return res.status(200).json({ free: true, message: "Enrolled in free course successfully" });
+    }
+
     // Determine client's frontend URL dynamically
     const clientOrigin = req.headers.origin || 
                          (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',')[0] : "http://localhost:5173");
